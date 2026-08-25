@@ -13,7 +13,7 @@ Plan de implementación por fases. Cada tarea incluye su criterio de validación
   - ✔ El README existe en la raíz y explica cómo correr la app localmente.
 
 ## Fase 1 — Datos y seguridad
-- [ ] T1.1 Migración con catálogos: `platforms`, `subscriptions`, `genres`, `games`, `game_genres`, `game_availability`.
+- [ ] T1.1 Migración con catálogos: `platforms`, `subscriptions` (incluye servicios en la nube con `kind='cloud'`), `genres`, `games`, `game_genres`, `game_availability`.
   - ✔ Constraints CHECK/UNIQUE aplicados; `SELECT` público funciona con anon key.
 - [ ] T1.2 Migración con tablas de usuario: `rooms`, `room_members`, `member_platforms`, `member_subscriptions`, `member_genres`, `suggestions`, `ratings`.
   - ✔ UNIQUE(room_id,user_id), UNIQUE(suggestion_id,user_id) y CHECKs verificados con inserts de prueba.
@@ -27,12 +27,12 @@ Plan de implementación por fases. Cada tarea incluye su criterio de validación
   - ✔ Validación de email y contraseña ≥8; errores de Supabase mostrados en español.
 - [ ] T2.2 Crear room con configuración (nombre, descripción, público/privado, máx. miembros 2–10 default 10, aprobación automática) y membresía approved del owner.
   - ✔ Al crear, se redirige al room y el owner aparece como miembro aprobado; la BD rechaza `max_members` fuera de 2–10.
-- [ ] T2.2b Home: listado de rooms públicos sin sesión; con sesión, "Mis rooms" primero y luego los públicos.
-  - ✔ Un room privado nunca aparece en el listado público; el listado no expone correos.
+- [ ] T2.2b Home: listado de rooms públicos abiertos sin sesión; con sesión, "Mis rooms" primero y luego los públicos.
+  - ✔ Un room privado o cerrado nunca aparece en el listado público; el listado no expone correos.
 - [ ] T2.2c Tab de configuración del room (solo owner): editar campos y cerrar el room.
   - ✔ Un no-owner no puede editar (RLS); no se puede bajar `max_members` por debajo de los aprobados actuales.
 - [ ] T2.3 Link de invitación con botón copiar + página `/#/join/<slug>`.
-  - ✔ Abrir el link sin sesión pide login y luego crea la solicitud `pending`.
+  - ✔ Abrir el link sin sesión pide login y luego crea la solicitud `pending` (o `approved` directo si el room público tiene auto-aprobación y hay cupo); con room cerrado o lleno se muestra el motivo y no se crea la solicitud.
 - [ ] T2.4 Panel de miembros del owner: aprobar/rechazar solicitudes, respetando el cupo y la aprobación automática.
   - ✔ El solicitante ve el cambio de estado sin recargar (realtime o polling); con el room lleno (máx. 10) no se puede aprobar a nadie más.
 
@@ -49,7 +49,7 @@ Plan de implementación por fases. Cada tarea incluye su criterio de validación
   - ✔ Con perfiles de prueba, cada juego devuelto es jugable por el 100% de los miembros; test con un miembro sin plataformas comunes devuelve lista vacía y mensaje claro.
 - [ ] T4.2 UI de sugerencias: tanda con cover, géneros, `reason` por miembro y botón regenerar.
   - ✔ Botón deshabilitado con perfiles incompletos, mostrando quiénes faltan.
-- [ ] T4.3 No repetir juegos de los últimos N batches.
+- [ ] T4.3 No repetir juegos de las últimas 3 tandas del room (tandas de 5 juegos).
   - ✔ Dos generaciones consecutivas no comparten juegos (mientras haya candidatos suficientes).
 
 ## Fase 5 — Calificaciones

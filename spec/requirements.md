@@ -19,7 +19,7 @@ Aplicación web pública (GitHub Pages + Supabase) que genera sugerencias de jue
 - R1b.2: Rooms **públicos**: aparecen en el listado público y cualquiera puede solicitar unirse desde ahí. Rooms **privados**: solo accesibles vía link de invitación.
 - R1b.3: La página de inicio muestra el listado de rooms públicos (nombre, descripción, nº de miembros / máximo) sin necesidad de sesión.
 - R1b.4: Con sesión iniciada, primero se muestran "Mis rooms" (donde soy owner o miembro) y debajo los rooms públicos.
-- R1b.5: El owner puede cerrar el room a nuevas solicitudes.
+- R1b.5: El owner puede cerrar el room a nuevas solicitudes; un room público cerrado deja de aparecer en el listado público (sus miembros siguen usándolo con normalidad).
 
 **Validaciones R1b**
 - Solo el owner puede modificar la configuración (RLS).
@@ -36,7 +36,8 @@ Aplicación web pública (GitHub Pages + Supabase) que genera sugerencias de jue
 **Validaciones R2**
 - Un correo solo puede tener una membresía por room (UNIQUE(room_id, user_id)).
 - Un miembro `pending`/`rejected` no puede leer datos internos del room (RLS).
-- Solo el owner puede cambiar el estado de una membresía.
+- Solo el owner puede cambiar el estado de una membresía; única excepción: la auto-aprobación al unirse a un room público con `auto_approve`, aplicada por el backend.
+- Un solicitante `rejected` no puede volver a solicitar unirse al mismo room; solo el owner puede cambiar su estado después.
 
 ## R3 — Formulario de plataformas y suscripciones
 - R3.1: Cada miembro aprobado completa un formulario indicando las plataformas que posee: PC, celular (iOS / Android), Xbox (One, Series S/X), PlayStation (PS4, PS5), Nintendo Switch (Switch, Switch 2), etc., con su versión/modelo.
@@ -60,7 +61,7 @@ Aplicación web pública (GitHub Pages + Supabase) que genera sugerencias de jue
 ## R5 — Generación de sugerencias
 - R5.1: El room genera sugerencias de juegos que **todos** los miembros aprobados con perfil completo puedan jugar: el juego debe estar disponible en al menos una plataforma/suscripción/servicio en la nube de **cada** miembro.
 - R5.2: Las sugerencias priorizan la intersección de categorías favoritas del grupo y excluyen las categorías vetadas.
-- R5.3: Cualquier miembro aprobado puede solicitar generar una nueva tanda de sugerencias; no se repiten juegos ya sugeridos recientemente.
+- R5.3: Cualquier miembro aprobado puede solicitar generar una nueva tanda de sugerencias (5 juegos por tanda); no se repiten juegos sugeridos en las últimas 3 tandas del room.
 - R5.4: Cada sugerencia muestra el juego, sus géneros y por qué cumple (plataformas/suscripciones que lo hacen accesible a cada miembro).
 
 **Validaciones R5**
@@ -69,7 +70,7 @@ Aplicación web pública (GitHub Pages + Supabase) que genera sugerencias de jue
 - La generación se ejecuta en el backend (Edge Function / SQL), nunca con lógica confiable solo en el cliente.
 
 ## R6 — Calificación y aprendizaje
-- R6.1: Cada miembro puede calificar cada sugerencia (p. ej. 1–5 estrellas o 👍/👎).
+- R6.1: Cada miembro puede calificar cada sugerencia con 1–5 estrellas.
 - R6.2: Las calificaciones ajustan las siguientes sugerencias: juegos/géneros mal calificados pierden prioridad; los bien calificados suben géneros afines.
 - R6.3: Se muestra la calificación agregada del room por sugerencia.
 
