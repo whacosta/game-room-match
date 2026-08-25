@@ -3,23 +3,23 @@
 Plan de implementación por fases. Cada tarea incluye su criterio de validación (✔).
 
 ## Fase 0 — Infraestructura
-- [ ] T0.1 Crear proyecto Supabase y guardar `SUPABASE_URL` / `SUPABASE_ANON_KEY`.
+- [x] T0.1 Crear proyecto Supabase y guardar `SUPABASE_URL` / `SUPABASE_ANON_KEY`.
   - ✔ El proyecto responde en el dashboard y la anon key funciona con `supabase-js`.
-- [ ] T0.2 Scaffold del frontend (Vite + React + TS) con `HashRouter` y cliente Supabase.
+- [x] T0.2 Scaffold del frontend (Vite + React + TS) con `HashRouter` y cliente Supabase.
   - ✔ `npm run dev` levanta la app y `npm run build` genera `dist/` sin errores.
-- [ ] T0.3 Pipeline de GitHub Actions (`.github/workflows/deploy.yml`): lint + typecheck + build en PRs; build y deploy de `dist/` a GitHub Pages en cada push a `main`.
+- [x] T0.3 Pipeline de GitHub Actions (`.github/workflows/deploy.yml`): lint + typecheck + build en PRs; build y deploy de `dist/` a GitHub Pages en cada push a `main`.
   - ✔ El workflow pasa en verde y la app carga en `https://whacosta.github.io/game-room-match/`.
-- [ ] T0.4 README inicial: descripción, arquitectura y setup local; se completa en T6.2.
+- [x] T0.4 README inicial: descripción, arquitectura y setup local; se completa en T6.2.
   - ✔ El README existe en la raíz y explica cómo correr la app localmente.
 
 ## Fase 1 — Datos y seguridad
-- [ ] T1.1 Migración con catálogos: `platforms`, `subscriptions` (incluye servicios en la nube con `kind='cloud'`), `genres`, `games`, `game_genres`, `game_availability`.
+- [x] T1.1 Migración con catálogos: `platforms`, `subscriptions` (incluye servicios en la nube con `kind='cloud'`), `genres`, `games`, `game_genres`, `game_availability`.
   - ✔ Constraints CHECK/UNIQUE aplicados; `SELECT` público funciona con anon key.
-- [ ] T1.2 Migración con tablas de usuario: `rooms`, `room_members`, `member_platforms`, `member_subscriptions`, `member_genres`, `suggestions`, `ratings`.
+- [x] T1.2 Migración con tablas de usuario: `rooms`, `room_members`, `member_platforms`, `member_subscriptions`, `member_genres`, `suggestions`, `ratings`.
   - ✔ UNIQUE(room_id,user_id), UNIQUE(suggestion_id,user_id) y CHECKs verificados con inserts de prueba.
-- [ ] T1.3 Políticas RLS + funciones `is_room_owner` / `is_approved_member`.
+- [x] T1.3 Políticas RLS + funciones `is_room_owner` / `is_approved_member`.
   - ✔ Tests: pending no lee el room; no-owner no aprueba; miembro solo edita su perfil.
-- [ ] T1.4 Seed de catálogos (plataformas con versiones, suscripciones incl. Amazon Luna/GeForce NOW, géneros, ~50 juegos iniciales con disponibilidad).
+- [x] T1.4 Seed de catálogos (plataformas con versiones, suscripciones incl. Amazon Luna/GeForce NOW, géneros, ~50 juegos iniciales con disponibilidad).
   - ✔ Los catálogos aparecen en la UI y cada juego seed tiene ≥1 género y ≥1 disponibilidad.
 
 ## Fase 2 — Auth y rooms
