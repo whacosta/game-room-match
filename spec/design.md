@@ -27,7 +27,9 @@ Catálogos (lectura pública):
 - `game_availability(game_id, platform_id NULL, subscription_id NULL)` — un juego es accesible por plataforma (compra) o por suscripción/nube. CHECK: exactamente uno de los dos no nulo.
 
 Datos de usuario:
-- `rooms(id, slug UNIQUE, name, owner_id → auth.users, created_at)`.
+- `rooms(id, slug UNIQUE, name, description, is_public boolean, max_members int DEFAULT 10 CHECK (max_members BETWEEN 2 AND 10), auto_approve boolean DEFAULT false, is_open boolean DEFAULT true, owner_id → auth.users, created_at)`.
+  - CHECK: `auto_approve` solo puede ser true si `is_public`.
+  - Vista `public_rooms` (o SELECT con RLS) que expone solo `slug, name, description, member_count, max_members` de rooms públicos y abiertos.
 - `room_members(id, room_id, user_id, status ∈ {pending, approved, rejected}, UNIQUE(room_id, user_id))`.
 - `member_platforms(member_id, platform_id)`.
 - `member_subscriptions(member_id, subscription_id)`.
@@ -37,8 +39,9 @@ Datos de usuario:
 
 ### RLS (resumen)
 - Catálogos: `SELECT` para `anon` y `authenticated`.
-- `rooms`: SELECT por slug para authenticated (para poder solicitar unirse); INSERT con `owner_id = auth.uid()`; UPDATE/DELETE solo owner.
-- `room_members`: INSERT propio con status `pending` (o `approved` si `user_id = owner`); UPDATE de `status` solo por el owner del room; SELECT para el propio usuario y para miembros aprobados del room.
+- `rooms`: SELECT para `anon`/`authenticated` de rooms públicos (vía vista `public_rooms`) y por slug para authenticated (para poder solicitar unirse a privados); INSERT con `owner_id = auth.uid()`; UPDATE/DELETE solo owner.
+- `room_members`: INSERT propio con status `pending` (o `approved` si `user_id = owner`, o si el room es público con `auto_approve`); UPDATE de `status` solo por el owner del room; SELECT para el propio usuario y para miembros aprobados del room.
+- Cupo: trigger/función `enforce_room_capacity` impide aprobar o auto-aprobar miembros por encima de `max_members`, y rechaza bajar `max_members` por debajo de los aprobados actuales.
 - `member_*`: CRUD solo del propio miembro; SELECT para miembros aprobados del mismo room.
 - `suggestions`: SELECT miembros aprobados; INSERT solo por la Edge Function (service role).
 - `ratings`: INSERT/UPDATE propio si es miembro aprobado; SELECT miembros aprobados.
@@ -47,10 +50,15 @@ Funciones helper en SQL: `is_room_owner(room_id)`, `is_approved_member(room_id)`
 
 ## 3. Flujos
 
+### 3.0 Landing / listado de rooms
+1. Sin sesión: la home lista los rooms públicos abiertos (nombre, descripción, miembros/máximo) con botón "Solicitar unirse" (lleva a login) y CTA "Crear room".
+2. Con sesión: sección "Mis rooms" primero (rooms donde soy owner o miembro, con mi estado), luego el listado público.
+
 ### 3.1 Crear room
 1. Sign up / sign in (email + contraseña) → sesión Supabase.
-2. Formulario nombre del room → INSERT `rooms` (slug generado) + INSERT `room_members(status='approved')` para el owner.
+2. Formulario de configuración: nombre, descripción corta, público/privado, máx. de miembros (2–10, default 10), aprobación automática (solo públicos) → INSERT `rooms` (slug generado) + INSERT `room_members(status='approved')` para el owner.
 3. Pantalla del room muestra el link de invitación `https://<user>.github.io/game-room-match/#/join/<slug>` con botón copiar.
+4. Tab "Configuración" (solo owner) para editar estos campos y cerrar el room a nuevas solicitudes.
 
 ### 3.2 Unirse a un room
 1. Abrir link de invitación → sign up / sign in.
@@ -81,13 +89,14 @@ Guardado incremental en `member_platforms` / `member_subscriptions` / `member_ge
 ## 4. Frontend
 
 - Vite + React + TypeScript, `@supabase/supabase-js`, hash routing (react-router `HashRouter`).
-- Páginas: `Landing` (crear/unirse), `Auth`, `Room` (tabs: Sugerencias, Miembros, Mi perfil), `Join/<slug>`.
+- Páginas: `Home` (mis rooms + rooms públicos, crear room), `Auth`, `Room` (tabs: Sugerencias, Miembros, Mi perfil, Configuración [owner]), `Join/<slug>`.
 - Estado de sesión con el listener de Supabase Auth; guards por estado de membresía.
 - Config `SUPABASE_URL` y `SUPABASE_ANON_KEY` como constantes de build (la anon key es pública por diseño).
 
-## 5. Despliegue
+## 5. Despliegue y CI/CD
 
-- GitHub Actions: workflow que hace build de Vite y publica `dist/` a GitHub Pages en cada push a `main`.
+- Workflow `.github/workflows/deploy.yml`: en cada push a `main` — instalar deps (`npm ci`), lint + typecheck, build de Vite y deploy de `dist/` a GitHub Pages (actions `upload-pages-artifact` + `deploy-pages`). En PRs corre solo lint/typecheck/build.
+- `README.md` en la raíz: descripción del proyecto, arquitectura (Pages + Supabase), setup local, configuración de Supabase (migraciones, seeds, Edge Functions) y guía de despliegue.
 - Migraciones SQL versionadas en `supabase/migrations/`; seeds de catálogos (`platforms`, `subscriptions`, `genres`, `games` iniciales) en `supabase/seed.sql`.
 - Edge Function en `supabase/functions/generate-suggestions/`.
 

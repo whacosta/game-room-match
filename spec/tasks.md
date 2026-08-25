@@ -7,8 +7,10 @@ Plan de implementación por fases. Cada tarea incluye su criterio de validación
   - ✔ El proyecto responde en el dashboard y la anon key funciona con `supabase-js`.
 - [ ] T0.2 Scaffold del frontend (Vite + React + TS) con `HashRouter` y cliente Supabase.
   - ✔ `npm run dev` levanta la app y `npm run build` genera `dist/` sin errores.
-- [ ] T0.3 Workflow de GitHub Actions que publica `dist/` a GitHub Pages en cada push a `main`.
-  - ✔ La app carga en `https://whacosta.github.io/game-room-match/`.
+- [ ] T0.3 Pipeline de GitHub Actions (`.github/workflows/deploy.yml`): lint + typecheck + build en PRs; build y deploy de `dist/` a GitHub Pages en cada push a `main`.
+  - ✔ El workflow pasa en verde y la app carga en `https://whacosta.github.io/game-room-match/`.
+- [ ] T0.4 README inicial: descripción, arquitectura y setup local; se completa en T6.2.
+  - ✔ El README existe en la raíz y explica cómo correr la app localmente.
 
 ## Fase 1 — Datos y seguridad
 - [ ] T1.1 Migración con catálogos: `platforms`, `subscriptions`, `genres`, `games`, `game_genres`, `game_availability`.
@@ -23,12 +25,16 @@ Plan de implementación por fases. Cada tarea incluye su criterio de validación
 ## Fase 2 — Auth y rooms
 - [ ] T2.1 Pantalla de registro/inicio de sesión (email + contraseña).
   - ✔ Validación de email y contraseña ≥8; errores de Supabase mostrados en español.
-- [ ] T2.2 Crear room (nombre → slug único) y membresía approved del owner.
-  - ✔ Al crear, se redirige al room y el owner aparece como miembro aprobado.
+- [ ] T2.2 Crear room con configuración (nombre, descripción, público/privado, máx. miembros 2–10 default 10, aprobación automática) y membresía approved del owner.
+  - ✔ Al crear, se redirige al room y el owner aparece como miembro aprobado; la BD rechaza `max_members` fuera de 2–10.
+- [ ] T2.2b Home: listado de rooms públicos sin sesión; con sesión, "Mis rooms" primero y luego los públicos.
+  - ✔ Un room privado nunca aparece en el listado público; el listado no expone correos.
+- [ ] T2.2c Tab de configuración del room (solo owner): editar campos y cerrar el room.
+  - ✔ Un no-owner no puede editar (RLS); no se puede bajar `max_members` por debajo de los aprobados actuales.
 - [ ] T2.3 Link de invitación con botón copiar + página `/#/join/<slug>`.
   - ✔ Abrir el link sin sesión pide login y luego crea la solicitud `pending`.
-- [ ] T2.4 Panel de miembros del owner: aprobar/rechazar solicitudes.
-  - ✔ El solicitante ve el cambio de estado sin recargar (realtime o polling).
+- [ ] T2.4 Panel de miembros del owner: aprobar/rechazar solicitudes, respetando el cupo y la aprobación automática.
+  - ✔ El solicitante ve el cambio de estado sin recargar (realtime o polling); con el room lleno (máx. 10) no se puede aprobar a nadie más.
 
 ## Fase 3 — Perfil de gustos
 - [ ] T3.1 Formulario de plataformas (por familia y versión), suscripciones y servicios en la nube.
@@ -55,5 +61,5 @@ Plan de implementación por fases. Cada tarea incluye su criterio de validación
 ## Fase 6 — Cierre
 - [ ] T6.1 Pruebas E2E del flujo dorado (crear → invitar → aprobar → perfiles → sugerir → calificar → regenerar).
   - ✔ Flujo completo pasa en el sitio publicado de GitHub Pages con 2+ cuentas.
-- [ ] T6.2 README con setup (Supabase, variables, deploy) y capturas.
+- [ ] T6.2 Completar README: setup de Supabase (migraciones, seeds, Edge Functions), variables, deploy y capturas.
   - ✔ Una persona nueva puede desplegar su propia instancia siguiendo el README.
