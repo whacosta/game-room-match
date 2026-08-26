@@ -102,6 +102,24 @@ export default function HomePage() {
         return
       }
 
+      const approvedMembersResult =
+        roomIds.length > 0
+          ? await supabase
+              .from('room_members')
+              .select('room_id')
+              .in('room_id', roomIds)
+              .eq('status', 'approved')
+          : { data: [], error: null }
+      const approvedCounts = new Map<string, number>()
+      if (!approvedMembersResult.error) {
+        for (const member of approvedMembersResult.data ?? []) {
+          approvedCounts.set(
+            member.room_id,
+            (approvedCounts.get(member.room_id) ?? 0) + 1,
+          )
+        }
+      }
+
       const roomsById = new Map(
         (roomsResult.data ?? []).map((room) => [room.id, room]),
       )
@@ -113,7 +131,7 @@ export default function HomePage() {
         return [
           {
             ...room,
-            member_count: 0,
+            member_count: approvedCounts.get(room.id) ?? 0,
             status: membership.status as MyRoom['status'],
           },
         ]

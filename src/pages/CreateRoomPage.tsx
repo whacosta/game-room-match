@@ -96,7 +96,7 @@ export default function CreateRoomPage() {
         <p className="muted">
           Configura cómo podrán encontrarlo y unirse tus amigos.
         </p>
-        <form onSubmit={handleSubmit} className="stack">
+        <form onSubmit={handleSubmit} className="stack" noValidate>
           <label>
             Nombre
             <input

@@ -79,7 +79,7 @@ export default function AuthPage() {
             ? 'Entra para gestionar tus rooms.'
             : 'Regístrate para crear o unirte a un room.'}
         </p>
-        <form onSubmit={handleSubmit} className="stack">
+        <form onSubmit={handleSubmit} className="stack" noValidate>
           <label>
             Correo electrónico
             <input
