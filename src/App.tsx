@@ -1,19 +1,19 @@
-import { Link, Route, Routes } from 'react-router-dom'
-
-function Home() {
-  return (
-    <main>
-      <h1>Game Room Match</h1>
-      <p>Encuentra el juego perfecto para compartir con tu grupo.</p>
-      <Link to="/">Inicio</Link>
-    </main>
-  )
-}
+import { Navigate, Route, Routes } from 'react-router-dom'
+import AuthPage from './pages/AuthPage'
+import CreateRoomPage from './pages/CreateRoomPage'
+import HomePage from './pages/HomePage'
+import JoinPage from './pages/JoinPage'
+import RoomPage from './pages/RoomPage'
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
+      <Route path="/" element={<HomePage />} />
+      <Route path="/auth" element={<AuthPage />} />
+      <Route path="/create" element={<CreateRoomPage />} />
+      <Route path="/room/:slug" element={<RoomPage />} />
+      <Route path="/join/:slug" element={<JoinPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }
