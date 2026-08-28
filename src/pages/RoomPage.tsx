@@ -10,8 +10,48 @@ import {
 } from '../lib/room'
 import { supabase } from '../lib/supabase'
 
-type Tab = 'members' | 'settings'
+type Tab = 'suggestions' | 'members' | 'settings'
 type ProfileStatus = 'complete' | 'incomplete' | 'unknown'
+
+type SuggestionReasonMember = {
+  user_id: string
+  access: Array<{ type: 'platform' | 'subscription'; name: string }>
+  matching_genres: string[]
+}
+
+type Suggestion = {
+  id: string
+  title: string
+  cover_url: string | null
+  genres: string[]
+  reason: {
+    members: SuggestionReasonMember[]
+  }
+  average_rating: number | null
+}
+
+function normalizeSuggestionReason(value: unknown): Suggestion['reason'] {
+  if (!value || typeof value !== 'object' || !('members' in value)) {
+    return { members: [] }
+  }
+  const members = value.members
+  if (!Array.isArray(members)) {
+    return { members: [] }
+  }
+  return {
+    members: members.filter(
+      (member): member is SuggestionReasonMember =>
+        Boolean(member) &&
+        typeof member === 'object' &&
+        'user_id' in member &&
+        'access' in member &&
+        'matching_genres' in member &&
+        typeof member.user_id === 'string' &&
+        Array.isArray(member.access) &&
+        Array.isArray(member.matching_genres),
+    ),
+  }
+}
 
 export default function RoomPage() {
   const { slug } = useParams()
@@ -21,7 +61,12 @@ export default function RoomPage() {
   const [members, setMembers] = useState<Membership[]>([])
   const [profileStatuses, setProfileStatuses] = useState<Record<string, ProfileStatus>>({})
   const [profileError, setProfileError] = useState('')
-  const [tab, setTab] = useState<Tab>('members')
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
+  const [suggestionError, setSuggestionError] = useState('')
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const [generationIncompleteIds, setGenerationIncompleteIds] = useState<string[]>([])
+  const [tab, setTab] = useState<Tab>('suggestions')
   const [loading, setLoading] = useState(true)
   const [accessMessage, setAccessMessage] = useState('')
   const [error, setError] = useState('')
@@ -36,6 +81,95 @@ export default function RoomPage() {
     isOpen: true,
   })
 
+  const loadSuggestions = useCallback(async (roomId: string) => {
+    setSuggestionsLoading(true)
+    setSuggestionError('')
+    const suggestionsResult = await supabase
+      .from('suggestions')
+      .select('id,game_id,batch_id,reason,created_at')
+      .eq('room_id', roomId)
+      .order('created_at', { ascending: false })
+
+    if (suggestionsResult.error) {
+      setSuggestionError(toSpanishError(suggestionsResult.error))
+      setSuggestionsLoading(false)
+      return
+    }
+    const rows = suggestionsResult.data ?? []
+    const latestBatchId = rows[0]?.batch_id
+    if (!latestBatchId) {
+      setSuggestions([])
+      setSuggestionsLoading(false)
+      return
+    }
+    const latestRows = rows.filter((row) => row.batch_id === latestBatchId)
+    const gameIds = latestRows.map((row) => row.game_id)
+    const suggestionIds = latestRows.map((row) => row.id)
+    const [gamesResult, gameGenresResult, ratingsResult] = await Promise.all([
+      supabase.from('games').select('id,title,cover_url').in('id', gameIds),
+      supabase.from('game_genres').select('game_id,genre_id').in('game_id', gameIds),
+      supabase.from('ratings').select('suggestion_id,score').in('suggestion_id', suggestionIds),
+    ])
+    if (gamesResult.error || gameGenresResult.error || ratingsResult.error) {
+      setSuggestionError(
+        toSpanishError(gamesResult.error ?? gameGenresResult.error ?? ratingsResult.error),
+      )
+      setSuggestionsLoading(false)
+      return
+    }
+    const genreIds = [...new Set((gameGenresResult.data ?? []).map((row) => row.genre_id))]
+    const genresResult =
+      genreIds.length > 0
+        ? await supabase.from('genres').select('id,name').in('id', genreIds)
+        : { data: [], error: null }
+    if (genresResult.error) {
+      setSuggestionError(toSpanishError(genresResult.error))
+      setSuggestionsLoading(false)
+      return
+    }
+
+    const gameById = new Map((gamesResult.data ?? []).map((game) => [game.id, game]))
+    const genreNames = new Map((genresResult.data ?? []).map((genre) => [genre.id, genre.name]))
+    const genresByGame = new Map<number, string[]>()
+    for (const row of gameGenresResult.data ?? []) {
+      const names = genresByGame.get(row.game_id) ?? []
+      const name = genreNames.get(row.genre_id)
+      if (name) {
+        names.push(name)
+      }
+      genresByGame.set(row.game_id, names)
+    }
+    const ratingsBySuggestion = new Map<string, number[]>()
+    for (const rating of ratingsResult.data ?? []) {
+      const scores = ratingsBySuggestion.get(rating.suggestion_id) ?? []
+      scores.push(rating.score)
+      ratingsBySuggestion.set(rating.suggestion_id, scores)
+    }
+    setSuggestions(
+      latestRows.flatMap((row) => {
+        const game = gameById.get(row.game_id)
+        if (!game) {
+          return []
+        }
+        const scores = ratingsBySuggestion.get(row.id) ?? []
+        return [
+          {
+            average_rating:
+              scores.length > 0
+                ? scores.reduce((sum, score) => sum + score, 0) / scores.length
+                : null,
+            cover_url: game.cover_url,
+            genres: genresByGame.get(row.game_id) ?? [],
+            id: row.id,
+            reason: normalizeSuggestionReason(row.reason),
+            title: game.title,
+          },
+        ]
+      }),
+    )
+    setSuggestionsLoading(false)
+  }, [])
+
   const loadRoom = useCallback(async () => {
     if (!user || !slug) {
       return
@@ -43,6 +177,8 @@ export default function RoomPage() {
     setLoading(true)
     setError('')
     setProfileError('')
+    setProfileStatuses({})
+    setGenerationIncompleteIds([])
     const roomResult = await supabase
       .from('rooms')
       .select('id,slug,name,description,is_public,max_members,auto_approve,is_open,owner_id')
@@ -143,6 +279,7 @@ export default function RoomPage() {
       }
       setProfileStatuses(nextStatuses)
     }
+    await loadSuggestions(nextRoom.id)
     setAccessMessage('')
     setRoom(nextRoom)
     setSettings({
@@ -154,7 +291,7 @@ export default function RoomPage() {
       isOpen: nextRoom.is_open,
     })
     setLoading(false)
-  }, [slug, user])
+  }, [loadSuggestions, slug, user])
 
   useEffect(() => {
     if (authLoading) {
@@ -170,6 +307,11 @@ export default function RoomPage() {
   }, [authLoading, loadRoom, navigate, slug, user])
 
   const isOwner = Boolean(room && user && room.owner_id === user.id)
+  const approvedMembers = members.filter((member) => member.status === 'approved')
+  const incompleteApprovedMembers = approvedMembers.filter(
+    (member) => profileStatuses[member.id] !== 'complete',
+  )
+  const canGenerate = approvedMembers.length > 0 && incompleteApprovedMembers.length === 0
   const inviteUrl = useMemo(() => {
     if (!room) {
       return ''
@@ -242,6 +384,52 @@ export default function RoomPage() {
     setSaving(false)
   }
 
+  const handleGenerate = async () => {
+    if (!room || !canGenerate) {
+      return
+    }
+    setGenerating(true)
+    setSuggestionError('')
+    setGenerationIncompleteIds([])
+    const { error: invokeError } = await supabase.functions.invoke('generate-suggestions', {
+      body: { room_id: room.id },
+    })
+    if (invokeError) {
+      const response = (invokeError as { context?: Response }).context
+      let payload: { incomplete_user_ids?: string[] } | null = null
+      if (response) {
+        try {
+          payload = (await response.clone().json()) as { incomplete_user_ids?: string[] }
+        } catch {
+          payload = null
+        }
+      }
+      if (response?.status === 409 && payload?.incomplete_user_ids) {
+        setGenerationIncompleteIds(payload.incomplete_user_ids)
+        setSuggestionError('Completa el perfil de todos los miembros antes de generar.')
+      } else if (response?.status === 403) {
+        setSuggestionError('Solo los miembros aprobados pueden generar sugerencias.')
+      } else {
+        setSuggestionError('No se pudieron generar las sugerencias. Inténtalo de nuevo.')
+      }
+    } else {
+      await loadSuggestions(room.id)
+    }
+    setGenerating(false)
+  }
+
+  const memberLabel = (member: Membership) =>
+    member.user_id === room?.owner_id
+      ? 'Owner'
+      : member.user_id === user?.id
+        ? 'Tú'
+        : shortUserId(member.user_id)
+
+  const labelForUserId = (userId: string) => {
+    const member = members.find((item) => item.user_id === userId)
+    return member ? memberLabel(member) : shortUserId(userId)
+  }
+
   if (authLoading || loading) {
     return <p className="page-message">Cargando room…</p>
   }
@@ -304,6 +492,13 @@ export default function RoomPage() {
       <div className="tabs" role="tablist" aria-label="Secciones del room">
         <button
           type="button"
+          className={tab === 'suggestions' ? 'tab active' : 'tab'}
+          onClick={() => setTab('suggestions')}
+        >
+          Sugerencias
+        </button>
+        <button
+          type="button"
           className={tab === 'members' ? 'tab active' : 'tab'}
           onClick={() => setTab('members')}
         >
@@ -325,8 +520,102 @@ export default function RoomPage() {
 
       {error && <p className="form-error">{error}</p>}
       {profileError && <p className="form-error">{profileError}</p>}
+      {suggestionError && <p className="form-error">{suggestionError}</p>}
 
-      {tab === 'members' ? (
+      {tab === 'suggestions' ? (
+        <section className="suggestions-section">
+          <div className="card suggestion-toolbar">
+            <div>
+              <h2>Sugerencias para el grupo</h2>
+              {incompleteApprovedMembers.length > 0 ? (
+                <p className="muted">
+                  Completa el perfil de estos miembros para generar una tanda:
+                </p>
+              ) : (
+                <p className="muted">
+                  Encontraremos juegos compatibles con todos los miembros aprobados.
+                </p>
+              )}
+            </div>
+            <button type="button" onClick={() => void handleGenerate()} disabled={!canGenerate || generating}>
+              {generating ? 'Generando…' : 'Generar sugerencias'}
+            </button>
+          </div>
+          {incompleteApprovedMembers.length > 0 && (
+            <div className="card incomplete-list">
+              {incompleteApprovedMembers.map((member) => (
+                <span className="status status-pending" key={member.id}>
+                  {memberLabel(member)}
+                </span>
+              ))}
+            </div>
+          )}
+          {generationIncompleteIds.length > 0 && (
+            <div className="card incomplete-list">
+              <strong>Perfiles incompletos indicados por el servidor:</strong>
+              {generationIncompleteIds.map((userId) => (
+                <span className="status status-pending" key={userId}>
+                  {labelForUserId(userId)}
+                </span>
+              ))}
+            </div>
+          )}
+          {suggestionsLoading ? (
+            <p className="page-message">Cargando sugerencias…</p>
+          ) : suggestions.length === 0 ? (
+            <section className="card empty-state">
+              Todavía no hay una tanda de sugerencias para este room.
+            </section>
+          ) : (
+            <div className="suggestion-grid">
+              {suggestions.map((suggestion) => (
+                <article className="card suggestion-card" key={suggestion.id}>
+                  <div className="suggestion-cover">
+                    {suggestion.cover_url ? (
+                      <img src={suggestion.cover_url} alt="" />
+                    ) : (
+                      <span>Sin portada</span>
+                    )}
+                  </div>
+                  <div className="suggestion-content">
+                    <div className="section-heading">
+                      <h3>{suggestion.title}</h3>
+                      {suggestion.average_rating !== null && (
+                        <span className="rating-average">
+                          ★ {suggestion.average_rating.toFixed(1)}
+                        </span>
+                      )}
+                    </div>
+                    <p className="suggestion-genres">
+                      {suggestion.genres.length > 0
+                        ? suggestion.genres.join(' · ')
+                        : 'Géneros no disponibles'}
+                    </p>
+                    <details>
+                      <summary>Por qué encaja</summary>
+                      <div className="suggestion-reasons">
+                        {suggestion.reason.members.map((reasonMember) => (
+                          <p key={reasonMember.user_id}>
+                            <strong>{labelForUserId(reasonMember.user_id)}:</strong>{' '}
+                            {reasonMember.access.length > 0
+                              ? `Disponible por ${reasonMember.access
+                                  .map((access) => access.name)
+                                  .join(', ')}. `
+                              : ''}
+                            {reasonMember.matching_genres.length > 0
+                              ? `Coincide en ${reasonMember.matching_genres.join(', ')}.`
+                              : 'Sin coincidencias de género favoritas.'}
+                          </p>
+                        ))}
+                      </div>
+                    </details>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      ) : tab === 'members' ? (
         <section className="card">
           <div className="section-heading">
             <div>

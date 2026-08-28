@@ -475,6 +475,105 @@ fieldset {
   margin-top: 0.75rem;
 }
 
+.suggestions-section {
+  display: grid;
+  gap: 1rem;
+}
+
+.suggestion-toolbar {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 1.25rem;
+}
+
+.suggestion-toolbar p {
+  margin-bottom: 0;
+}
+
+.suggestion-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+}
+
+.suggestion-card {
+  overflow: hidden;
+}
+
+.suggestion-cover {
+  align-items: center;
+  background:
+    radial-gradient(circle at 70% 20%, rgb(136 165 255 / 35%), transparent 45%),
+    #e8edff;
+  color: #53617a;
+  display: flex;
+  height: 11rem;
+  justify-content: center;
+  text-align: center;
+}
+
+.suggestion-cover img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.suggestion-content {
+  padding: 1.1rem;
+}
+
+.suggestion-content h3 {
+  margin-bottom: 0;
+}
+
+.suggestion-genres {
+  color: #68758c;
+  font-size: 0.88rem;
+  margin-bottom: 1rem;
+}
+
+.rating-average {
+  color: #946113;
+  font-size: 0.9rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.suggestion-content details {
+  border-top: 1px solid #edf0f5;
+  padding-top: 0.75rem;
+}
+
+.suggestion-content summary {
+  color: #3157d5;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.suggestion-reasons {
+  color: #53617a;
+  font-size: 0.88rem;
+  margin-top: 0.7rem;
+}
+
+.suggestion-reasons p {
+  margin-bottom: 0.7rem;
+}
+
+.suggestion-reasons p:last-child {
+  margin-bottom: 0;
+}
+
+.incomplete-list {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 1rem;
+}
+
 .profile-status {
   color: #68758c;
   display: block;
@@ -586,6 +685,11 @@ fieldset {
 
   .section-heading {
     align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .suggestion-toolbar {
+    align-items: stretch;
     flex-direction: column;
   }
 }

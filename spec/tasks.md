@@ -45,11 +45,11 @@ Plan de implementación por fases. Cada tarea incluye su criterio de validación
   - ✔ El room lista quiénes tienen perfil incompleto.
 
 ## Fase 4 — Sugerencias
-- [ ] T4.1 Edge Function `generate-suggestions`: intersección de disponibilidad, exclusión de géneros vetados y juegos recientes, score por géneros.
+- [x] T4.1 Edge Function `generate-suggestions`: intersección de disponibilidad, exclusión de géneros vetados y juegos recientes, score por géneros.
   - ✔ Con perfiles de prueba, cada juego devuelto es jugable por el 100% de los miembros; test con un miembro sin plataformas comunes devuelve lista vacía y mensaje claro.
-- [ ] T4.2 UI de sugerencias: tanda con cover, géneros, `reason` por miembro y botón regenerar.
+- [x] T4.2 UI de sugerencias: tanda con cover, géneros, `reason` por miembro y botón regenerar.
   - ✔ Botón deshabilitado con perfiles incompletos, mostrando quiénes faltan.
-- [ ] T4.3 No repetir juegos de las últimas 3 tandas del room (tandas de 5 juegos).
+- [x] T4.3 No repetir juegos de las últimas 3 tandas del room (tandas de 5 juegos).
   - ✔ Dos generaciones consecutivas no comparten juegos (mientras haya candidatos suficientes).
 
 ## Fase 5 — Calificaciones
