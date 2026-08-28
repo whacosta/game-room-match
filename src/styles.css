@@ -431,6 +431,10 @@ fieldset {
   padding: 0.7rem 0.15rem;
 }
 
+.tab-link {
+  text-decoration: none;
+}
+
 .tab.active {
   border-bottom-color: #3157d5;
   color: #3157d5;
@@ -471,6 +475,78 @@ fieldset {
   margin-top: 0.75rem;
 }
 
+.profile-status {
+  color: #68758c;
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-top: 0.2rem;
+}
+
+.profile-header {
+  margin: 1.5rem 0 1.75rem;
+}
+
+.profile-form {
+  margin: 0 auto;
+  width: min(100%, 70rem);
+}
+
+.profile-section {
+  padding: clamp(1.25rem, 4vw, 2rem);
+}
+
+.selection-count {
+  color: #68758c;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.catalog-groups {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.catalog-group {
+  border-top: 1px solid #edf0f5;
+  gap: 0.7rem;
+  padding-top: 1rem;
+}
+
+.catalog-group:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.catalog-grid {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+
+.catalog-option {
+  align-items: center;
+  background: #f7f9fd;
+  border: 1px solid #e3e8f2;
+  border-radius: 0.55rem;
+  display: flex;
+  font-weight: 500;
+  gap: 0.55rem;
+  min-height: 2.7rem;
+  padding: 0.55rem 0.7rem;
+}
+
+.catalog-option input {
+  accent-color: #3157d5;
+  margin: 0;
+}
+
+.genre-columns {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 @media (max-width: 640px) {
   .page-shell,
   .narrow-shell {
@@ -500,6 +576,15 @@ fieldset {
   }
 
   .member-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .genre-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .section-heading {
     align-items: flex-start;
     flex-direction: column;
   }

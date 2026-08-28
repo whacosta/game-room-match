@@ -11,6 +11,7 @@ import {
 import { supabase } from '../lib/supabase'
 
 type Tab = 'members' | 'settings'
+type ProfileStatus = 'complete' | 'incomplete' | 'unknown'
 
 export default function RoomPage() {
   const { slug } = useParams()
@@ -18,6 +19,8 @@ export default function RoomPage() {
   const navigate = useNavigate()
   const [room, setRoom] = useState<Room | null>(null)
   const [members, setMembers] = useState<Membership[]>([])
+  const [profileStatuses, setProfileStatuses] = useState<Record<string, ProfileStatus>>({})
+  const [profileError, setProfileError] = useState('')
   const [tab, setTab] = useState<Tab>('members')
   const [loading, setLoading] = useState(true)
   const [accessMessage, setAccessMessage] = useState('')
@@ -39,6 +42,7 @@ export default function RoomPage() {
     }
     setLoading(true)
     setError('')
+    setProfileError('')
     const roomResult = await supabase
       .from('rooms')
       .select('id,slug,name,description,is_public,max_members,auto_approve,is_open,owner_id')
@@ -88,7 +92,56 @@ export default function RoomPage() {
     if (membersResult.error) {
       setError(toSpanishError(membersResult.error))
     } else {
-      setMembers((membersResult.data ?? []) as Membership[])
+      const nextMembers = (membersResult.data ?? []) as Membership[]
+      setMembers(nextMembers)
+      const nextStatuses: Record<string, ProfileStatus> = {}
+      const approvedMemberIds = nextMembers
+        .filter((member) => member.status === 'approved')
+        .map((member) => member.id)
+      for (const member of nextMembers) {
+        if (member.status !== 'approved') {
+          nextStatuses[member.id] = 'incomplete'
+        }
+      }
+
+      if (approvedMemberIds.length > 0) {
+        const [platformsResult, genresResult] = await Promise.all([
+          supabase
+            .from('member_platforms')
+            .select('member_id')
+            .in('member_id', approvedMemberIds),
+          supabase
+            .from('member_genres')
+            .select('member_id,preference')
+            .in('member_id', approvedMemberIds)
+            .eq('preference', 'like'),
+        ])
+        if (platformsResult.error || genresResult.error) {
+          setProfileError(
+            'No se pudo comprobar el estado de los perfiles de todos los miembros.',
+          )
+          for (const memberId of approvedMemberIds) {
+            nextStatuses[memberId] = 'unknown'
+          }
+        } else {
+          const platformCounts = new Map<string, number>()
+          const favoriteCounts = new Map<string, number>()
+          for (const row of platformsResult.data ?? []) {
+            platformCounts.set(row.member_id, (platformCounts.get(row.member_id) ?? 0) + 1)
+          }
+          for (const row of genresResult.data ?? []) {
+            favoriteCounts.set(row.member_id, (favoriteCounts.get(row.member_id) ?? 0) + 1)
+          }
+          for (const memberId of approvedMemberIds) {
+            nextStatuses[memberId] =
+              (platformCounts.get(memberId) ?? 0) > 0 &&
+              (favoriteCounts.get(memberId) ?? 0) > 0
+                ? 'complete'
+                : 'incomplete'
+          }
+        }
+      }
+      setProfileStatuses(nextStatuses)
     }
     setAccessMessage('')
     setRoom(nextRoom)
@@ -265,9 +318,13 @@ export default function RoomPage() {
             Configuración
           </button>
         )}
+        <Link className="tab tab-link" to={`/room/${room.slug}/profile`}>
+          Mi perfil
+        </Link>
       </div>
 
       {error && <p className="form-error">{error}</p>}
+      {profileError && <p className="form-error">{profileError}</p>}
 
       {tab === 'members' ? (
         <section className="card">
@@ -295,6 +352,13 @@ export default function RoomPage() {
                     {member.user_id === room.owner_id && (
                       <span className="muted member-note">Creador del room</span>
                     )}
+                    <span className="profile-status">
+                      {profileStatuses[member.id] === 'complete'
+                        ? 'Perfil completo'
+                        : profileStatuses[member.id] === 'unknown'
+                          ? 'Perfil no disponible'
+                          : 'Perfil incompleto'}
+                    </span>
                   </div>
                   <div className="member-actions">
                     <span className={`status status-${member.status}`}>

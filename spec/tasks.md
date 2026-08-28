@@ -23,25 +23,25 @@ Plan de implementación por fases. Cada tarea incluye su criterio de validación
   - ✔ Los catálogos aparecen en la UI y cada juego seed tiene ≥1 género y ≥1 disponibilidad.
 
 ## Fase 2 — Auth y rooms
-- [ ] T2.1 Pantalla de registro/inicio de sesión (email + contraseña).
+- [x] T2.1 Pantalla de registro/inicio de sesión (email + contraseña).
   - ✔ Validación de email y contraseña ≥8; errores de Supabase mostrados en español.
-- [ ] T2.2 Crear room con configuración (nombre, descripción, público/privado, máx. miembros 2–10 default 10, aprobación automática) y membresía approved del owner.
+- [x] T2.2 Crear room con configuración (nombre, descripción, público/privado, máx. miembros 2–10 default 10, aprobación automática) y membresía approved del owner.
   - ✔ Al crear, se redirige al room y el owner aparece como miembro aprobado; la BD rechaza `max_members` fuera de 2–10.
-- [ ] T2.2b Home: listado de rooms públicos abiertos sin sesión; con sesión, "Mis rooms" primero y luego los públicos.
+- [x] T2.2b Home: listado de rooms públicos abiertos sin sesión; con sesión, "Mis rooms" primero y luego los públicos.
   - ✔ Un room privado o cerrado nunca aparece en el listado público; el listado no expone correos.
-- [ ] T2.2c Tab de configuración del room (solo owner): editar campos y cerrar el room.
+- [x] T2.2c Tab de configuración del room (solo owner): editar campos y cerrar el room.
   - ✔ Un no-owner no puede editar (RLS); no se puede bajar `max_members` por debajo de los aprobados actuales.
-- [ ] T2.3 Link de invitación con botón copiar + página `/#/join/<slug>`.
+- [x] T2.3 Link de invitación con botón copiar + página `/#/join/<slug>`.
   - ✔ Abrir el link sin sesión pide login y luego crea la solicitud `pending` (o `approved` directo si el room público tiene auto-aprobación y hay cupo); con room cerrado o lleno se muestra el motivo y no se crea la solicitud.
-- [ ] T2.4 Panel de miembros del owner: aprobar/rechazar solicitudes, respetando el cupo y la aprobación automática.
+- [x] T2.4 Panel de miembros del owner: aprobar/rechazar solicitudes, respetando el cupo y la aprobación automática.
   - ✔ El solicitante ve el cambio de estado sin recargar (realtime o polling); con el room lleno (máx. 10) no se puede aprobar a nadie más.
 
 ## Fase 3 — Perfil de gustos
-- [ ] T3.1 Formulario de plataformas (por familia y versión), suscripciones y servicios en la nube.
+- [x] T3.1 Formulario de plataformas (por familia y versión), suscripciones y servicios en la nube.
   - ✔ Guarda y recarga selecciones; exige ≥1 plataforma.
-- [ ] T3.2 Selección de géneros favoritos y géneros a evitar.
+- [x] T3.2 Selección de géneros favoritos y géneros a evitar.
   - ✔ Exige ≥1 favorito; impide marcar un género en ambas listas.
-- [ ] T3.3 Indicador de perfil completo por miembro en el panel del room.
+- [x] T3.3 Indicador de perfil completo por miembro en el panel del room.
   - ✔ El room lista quiénes tienen perfil incompleto.
 
 ## Fase 4 — Sugerencias
