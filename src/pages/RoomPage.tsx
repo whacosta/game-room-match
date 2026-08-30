@@ -143,7 +143,7 @@ export default function RoomPage() {
     const [gamesResult, gameGenresResult, ratingsResult] = await Promise.all([
       supabase.from('games').select('id,title,cover_url').in('id', gameIds),
       supabase.from('game_genres').select('game_id,genre_id').in('game_id', gameIds),
-      supabase.from('ratings').select('suggestion_id,score').in('suggestion_id', suggestionIds),
+      supabase.from('ratings').select('suggestion_id,user_id,score').in('suggestion_id', suggestionIds),
     ])
     if (gamesResult.error || gameGenresResult.error || ratingsResult.error) {
       setSuggestionError(
