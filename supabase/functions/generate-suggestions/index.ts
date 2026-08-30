@@ -377,7 +377,10 @@ Deno.serve(async (request) => {
             })
           }
         }
-        const matchingGenreNames: string[] = [...matchingGenres]
+        const memberMatchingGenres = new Set(
+          [...gameGenres].filter((genreId) => profile.likes.has(genreId)),
+        )
+        const matchingGenreNames: string[] = [...memberMatchingGenres]
           .map((genreId) => genreNames.get(genreId) ?? 'Género')
           .sort()
         return {

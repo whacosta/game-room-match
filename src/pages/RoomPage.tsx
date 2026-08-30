@@ -333,6 +333,23 @@ export default function RoomPage() {
     setLoading(false)
   }, [loadSuggestions, slug, user])
 
+  const isCurrentUserApproved = Boolean(
+    user && members.some((member) => member.user_id === user.id && member.status === 'approved'),
+  )
+
+  useEffect(() => {
+    if (!room || tab !== 'suggestions' || !isCurrentUserApproved) {
+      return
+    }
+
+    void loadSuggestions(room.id)
+    const intervalId = window.setInterval(() => {
+      void loadSuggestions(room.id)
+    }, 10000)
+
+    return () => window.clearInterval(intervalId)
+  }, [isCurrentUserApproved, loadSuggestions, room, tab])
+
   useEffect(() => {
     if (authLoading) {
       return
@@ -459,7 +476,7 @@ export default function RoomPage() {
   }
 
   const handleRate = async (suggestionId: string, score: number) => {
-    if (!user || !room || !approvedMembers.some((member) => member.user_id === user.id)) {
+    if (!user || !room || !isCurrentUserApproved) {
       return
     }
     setRatingSavingId(suggestionId)
@@ -659,7 +676,7 @@ export default function RoomPage() {
                           ? `Promedio del room: ★ ${suggestion.average_rating.toFixed(1)}`
                           : 'El room todavía no tiene valoraciones.'}
                       </div>
-                      {approvedMembers.some((member) => member.user_id === user?.id) && (
+                      {isCurrentUserApproved && (
                         <RatingStars
                           disabled={false}
                           onChange={(score) => void handleRate(suggestion.id, score)}
@@ -681,7 +698,7 @@ export default function RoomPage() {
                               : ''}
                             {reasonMember.matching_genres.length > 0
                               ? `Coincide en ${reasonMember.matching_genres.join(', ')}.`
-                              : 'Sin coincidencias de género favoritas.'}
+                              : ''}
                           </p>
                         ))}
                       </div>
