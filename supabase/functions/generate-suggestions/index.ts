@@ -326,20 +326,15 @@ Deno.serve(async (request) => {
       ratingsBySuggestion.set(rating.suggestion_id, scores)
     }
   }
-  const ratingByGame = new Map<number, number>()
+  const ratingByGenre = new Map<number, number[]>()
   for (const row of history) {
     const scores = ratingsBySuggestion.get(row.id)
-    if (scores && scores.length > 0) {
-      const current = ratingByGame.get(row.game_id)
-      const average = scores.reduce((sum, score) => sum + score, 0) / scores.length
-      ratingByGame.set(row.game_id, current === undefined ? average : (current + average) / 2)
+    if (!scores) {
+      continue
     }
-  }
-  const ratingByGenre = new Map<number, number[]>()
-  for (const [gameId, average] of ratingByGame) {
-    for (const genreId of genresByGame.get(gameId) ?? []) {
+    for (const genreId of genresByGame.get(row.game_id) ?? []) {
       const ratings = ratingByGenre.get(genreId) ?? []
-      ratings.push(average)
+      ratings.push(...scores)
       ratingByGenre.set(genreId, ratings)
     }
   }

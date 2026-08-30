@@ -28,6 +28,40 @@ type Suggestion = {
     members: SuggestionReasonMember[]
   }
   average_rating: number | null
+  my_rating: number | null
+}
+
+type RatingStarsProps = {
+  value: number | null
+  disabled: boolean
+  saving: boolean
+  onChange: (score: number) => void
+}
+
+function RatingStars({ value, disabled, saving, onChange }: RatingStarsProps) {
+  return (
+    <div className="rating-control" aria-label="Tu valoración">
+      <span className="rating-label">Tu valoración</span>
+      <div className="rating-stars" role="group" aria-label="Valorar de 1 a 5 estrellas">
+        {[1, 2, 3, 4, 5].map((score) => (
+          <button
+            type="button"
+            className="rating-star"
+            key={score}
+            aria-label={`${score} ${score === 1 ? 'estrella' : 'estrellas'}`}
+            aria-pressed={value === score}
+            disabled={disabled || saving}
+            onClick={() => onChange(score)}
+          >
+            {value !== null && score <= value ? '★' : '☆'}
+          </button>
+        ))}
+      </div>
+      <span className="rating-hint">
+        {saving ? 'Guardando…' : value === null ? 'Sin votar' : `${value}/5`}
+      </span>
+    </div>
+  )
 }
 
 function normalizeSuggestionReason(value: unknown): Suggestion['reason'] {
@@ -66,6 +100,7 @@ export default function RoomPage() {
   const [suggestionsLoading, setSuggestionsLoading] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [generationIncompleteIds, setGenerationIncompleteIds] = useState<string[]>([])
+  const [ratingSavingId, setRatingSavingId] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('suggestions')
   const [loading, setLoading] = useState(true)
   const [accessMessage, setAccessMessage] = useState('')
@@ -140,10 +175,14 @@ export default function RoomPage() {
       genresByGame.set(row.game_id, names)
     }
     const ratingsBySuggestion = new Map<string, number[]>()
+    const myRatings = new Map<string, number>()
     for (const rating of ratingsResult.data ?? []) {
       const scores = ratingsBySuggestion.get(rating.suggestion_id) ?? []
       scores.push(rating.score)
       ratingsBySuggestion.set(rating.suggestion_id, scores)
+      if (rating.user_id === user?.id) {
+        myRatings.set(rating.suggestion_id, rating.score)
+      }
     }
     setSuggestions(
       latestRows.flatMap((row) => {
@@ -161,6 +200,7 @@ export default function RoomPage() {
             cover_url: game.cover_url,
             genres: genresByGame.get(row.game_id) ?? [],
             id: row.id,
+            my_rating: myRatings.get(row.id) ?? null,
             reason: normalizeSuggestionReason(row.reason),
             title: game.title,
           },
@@ -168,7 +208,7 @@ export default function RoomPage() {
       }),
     )
     setSuggestionsLoading(false)
-  }, [])
+  }, [user?.id])
 
   const loadRoom = useCallback(async () => {
     if (!user || !slug) {
@@ -418,6 +458,28 @@ export default function RoomPage() {
     setGenerating(false)
   }
 
+  const handleRate = async (suggestionId: string, score: number) => {
+    if (!user || !room || !approvedMembers.some((member) => member.user_id === user.id)) {
+      return
+    }
+    setRatingSavingId(suggestionId)
+    setSuggestionError('')
+    const result = await supabase.from('ratings').upsert(
+      {
+        score,
+        suggestion_id: suggestionId,
+        user_id: user.id,
+      },
+      { onConflict: 'suggestion_id,user_id' },
+    )
+    if (result.error) {
+      setSuggestionError('No se pudo guardar tu valoración. Inténtalo de nuevo.')
+    } else {
+      await loadSuggestions(room.id)
+    }
+    setRatingSavingId(null)
+  }
+
   const memberLabel = (member: Membership) =>
     member.user_id === room?.owner_id
       ? 'Owner'
@@ -591,6 +653,21 @@ export default function RoomPage() {
                         ? suggestion.genres.join(' · ')
                         : 'Géneros no disponibles'}
                     </p>
+                    <div className="suggestion-rating">
+                      <div className="rating-room-average">
+                        {suggestion.average_rating !== null
+                          ? `Promedio del room: ★ ${suggestion.average_rating.toFixed(1)}`
+                          : 'El room todavía no tiene valoraciones.'}
+                      </div>
+                      {approvedMembers.some((member) => member.user_id === user?.id) && (
+                        <RatingStars
+                          disabled={false}
+                          onChange={(score) => void handleRate(suggestion.id, score)}
+                          saving={ratingSavingId === suggestion.id}
+                          value={suggestion.my_rating}
+                        />
+                      )}
+                    </div>
                     <details>
                       <summary>Por qué encaja</summary>
                       <div className="suggestion-reasons">

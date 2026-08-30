@@ -53,9 +53,9 @@ Plan de implementación por fases. Cada tarea incluye su criterio de validación
   - ✔ Dos generaciones consecutivas no comparten juegos (mientras haya candidatos suficientes).
 
 ## Fase 5 — Calificaciones
-- [ ] T5.1 Rating 1–5 estrellas por sugerencia con upsert.
+- [x] T5.1 Rating 1–5 estrellas por sugerencia con upsert.
   - ✔ Un segundo voto del mismo usuario actualiza, no duplica; promedio del room visible.
-- [ ] T5.2 Incorporar ratings al score de la Edge Function.
+- [x] T5.2 Incorporar ratings al score de la Edge Function.
   - ✔ Tras calificar mal todos los juegos de un género, la siguiente tanda reduce ese género; test automatizado del score.
 
 ## Fase 6 — Cierre

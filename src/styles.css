@@ -541,6 +541,52 @@ fieldset {
   white-space: nowrap;
 }
 
+.suggestion-rating {
+  border-top: 1px solid #edf0f5;
+  display: grid;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+  padding-top: 0.8rem;
+}
+
+.rating-room-average {
+  color: #946113;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.rating-control {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.rating-label,
+.rating-hint {
+  color: #68758c;
+  font-size: 0.82rem;
+}
+
+.rating-stars {
+  display: flex;
+  gap: 0.05rem;
+}
+
+.rating-star {
+  background: transparent;
+  border: 0;
+  color: #c38a25;
+  font-size: 1.35rem;
+  line-height: 1;
+  padding: 0.1rem;
+}
+
+.rating-star:not(:disabled):hover {
+  color: #946113;
+  transform: scale(1.08);
+}
+
 .suggestion-content details {
   border-top: 1px solid #edf0f5;
   padding-top: 0.75rem;
