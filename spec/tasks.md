@@ -59,7 +59,7 @@ Plan de implementación por fases. Cada tarea incluye su criterio de validación
   - ✔ Tras calificar mal todos los juegos de un género, la siguiente tanda reduce ese género; test automatizado del score.
 
 ## Fase 6 — Cierre
-- [ ] T6.1 Pruebas E2E del flujo dorado (crear → invitar → aprobar → perfiles → sugerir → calificar → regenerar).
+- [x] T6.1 Pruebas E2E del flujo dorado (crear → invitar → aprobar → perfiles → sugerir → calificar → regenerar).
   - ✔ Flujo completo pasa en el sitio publicado de GitHub Pages con 2+ cuentas.
-- [ ] T6.2 Completar README: setup de Supabase (migraciones, seeds, Edge Functions), variables, deploy y capturas.
+- [x] T6.2 Completar README: setup de Supabase (migraciones, seeds, Edge Functions), variables, deploy y capturas.
   - ✔ Una persona nueva puede desplegar su propia instancia siguiendo el README.
