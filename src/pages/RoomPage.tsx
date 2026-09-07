@@ -116,8 +116,11 @@ export default function RoomPage() {
     isOpen: true,
   })
 
-  const loadSuggestions = useCallback(async (roomId: string) => {
-    setSuggestionsLoading(true)
+  const loadSuggestions = useCallback(async (roomId: string, options?: { silent?: boolean }) => {
+    const silent = options?.silent === true
+    if (!silent) {
+      setSuggestionsLoading(true)
+    }
     setSuggestionError('')
     const suggestionsResult = await supabase
       .from('suggestions')
@@ -127,14 +130,18 @@ export default function RoomPage() {
 
     if (suggestionsResult.error) {
       setSuggestionError(toSpanishError(suggestionsResult.error))
-      setSuggestionsLoading(false)
+      if (!silent) {
+        setSuggestionsLoading(false)
+      }
       return
     }
     const rows = suggestionsResult.data ?? []
     const latestBatchId = rows[0]?.batch_id
     if (!latestBatchId) {
       setSuggestions([])
-      setSuggestionsLoading(false)
+      if (!silent) {
+        setSuggestionsLoading(false)
+      }
       return
     }
     const latestRows = rows.filter((row) => row.batch_id === latestBatchId)
@@ -149,7 +156,9 @@ export default function RoomPage() {
       setSuggestionError(
         toSpanishError(gamesResult.error ?? gameGenresResult.error ?? ratingsResult.error),
       )
-      setSuggestionsLoading(false)
+      if (!silent) {
+        setSuggestionsLoading(false)
+      }
       return
     }
     const genreIds = [...new Set((gameGenresResult.data ?? []).map((row) => row.genre_id))]
@@ -159,7 +168,9 @@ export default function RoomPage() {
         : { data: [], error: null }
     if (genresResult.error) {
       setSuggestionError(toSpanishError(genresResult.error))
-      setSuggestionsLoading(false)
+      if (!silent) {
+        setSuggestionsLoading(false)
+      }
       return
     }
 
@@ -207,7 +218,9 @@ export default function RoomPage() {
         ]
       }),
     )
-    setSuggestionsLoading(false)
+    if (!silent) {
+      setSuggestionsLoading(false)
+    }
   }, [user?.id])
 
   const loadRoom = useCallback(async () => {
@@ -342,9 +355,9 @@ export default function RoomPage() {
       return
     }
 
-    void loadSuggestions(room.id)
+    void loadSuggestions(room.id, { silent: true })
     const intervalId = window.setInterval(() => {
-      void loadSuggestions(room.id)
+      void loadSuggestions(room.id, { silent: true })
     }, 10000)
 
     return () => window.clearInterval(intervalId)
@@ -492,7 +505,7 @@ export default function RoomPage() {
     if (result.error) {
       setSuggestionError('No se pudo guardar tu valoración. Inténtalo de nuevo.')
     } else {
-      await loadSuggestions(room.id)
+      await loadSuggestions(room.id, { silent: true })
     }
     setRatingSavingId(null)
   }
