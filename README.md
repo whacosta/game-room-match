@@ -122,6 +122,19 @@ psql "$SUPABASE_DB_URL" -f supabase/seed.sql
 El seed es idempotente y referencia los catálogos por nombre, no por IDs
 seriales.
 
+Para ampliar el catálogo con juegos populares reales (títulos, géneros,
+plataformas y portadas) existe un importador desde la API de
+[RAWG](https://rawg.io/apidocs). Crea una API key gratuita y ejecuta:
+
+```bash
+RAWG_API_KEY=<tu-key> node scripts/import-rawg.mjs 8 > rawg-import.sql
+psql "$SUPABASE_DB_URL" -f rawg-import.sql
+```
+
+Cada página trae 40 juegos ordenados por popularidad. El SQL generado es
+idempotente: los juegos existentes solo actualizan su portada y metadata. La
+disponibilidad por suscripción/cloud no viene de RAWG y se mantiene manual.
+
 ### 4. Desplegar la Edge Function
 
 La función valida manualmente el JWT y responde a `OPTIONS` para CORS, por lo
